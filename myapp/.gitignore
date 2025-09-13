@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 myapp/assets/*.json
+
+# Ignore secrets
+myapp/assets/*.json
+
