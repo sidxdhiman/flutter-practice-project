@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:path_provider/path_provider.dart';
-import 'storage_service.dart'; // <-- helper for Firebase Storage
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
+import 'package:http/http.dart' as http;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // required before using Firebase
+  await Firebase.initializeApp();
   runApp(const RootApp());
 }
 
@@ -50,6 +52,18 @@ class RootApp extends StatelessWidget {
 class User {
   String username;
   User(this.username);
+}
+
+class GoogleAuthClient extends http.BaseClient {
+  final Map<String, String> _headers;
+  final http.Client _client = http.Client();
+
+  GoogleAuthClient(this._headers);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    return _client.send(request..headers.addAll(_headers));
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -267,7 +281,7 @@ class _MyAppState extends State<MyApp> {
               final List<Barcode> barcodes = capture.barcodes;
               if (barcodes.isNotEmpty) {
                 scannedCode = barcodes.first.rawValue;
-                Navigator.pop(context); // close scanner after first scan
+                Navigator.pop(context);
               }
             },
           ),
@@ -329,6 +343,7 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  // ----------------- GOOGLE DRIVE UPLOAD -----------------
   Future<void> _uploadAttendance() async {
     if (_attendance.isEmpty) {
       ScaffoldMessenger.of(
@@ -346,17 +361,42 @@ class _MyAppState extends State<MyApp> {
       final file = File('${dir.path}/attendance.txt');
       await file.writeAsString(content);
 
-      // 2. Upload to Firebase Storage
-      final storageService = StorageService();
-      final url = await storageService.uploadAttendanceFile(file, userId);
+      // 2. Sign in with Google
+      final googleSignIn = GoogleSignIn(
+        scopes: [drive.DriveApi.driveFileScope],
+      );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Uploaded ✅ URL: $url')));
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Sign-In canceled')),
+        );
+        return;
+      }
+
+      final authHeaders = await account.authHeaders;
+      final authenticateClient = GoogleAuthClient(authHeaders);
+
+      // 3. Upload to Drive
+      final driveApi = drive.DriveApi(authenticateClient);
+
+      final driveFile = drive.File();
+      driveFile.name =
+          'attendance_${userId}_${DateTime.now().millisecondsSinceEpoch}.txt';
+
+      final media = drive.Media(file.openRead(), file.lengthSync());
+      final uploadedFile = await driveApi.files.create(
+        driveFile,
+        uploadMedia: media,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Uploaded ✅ File ID: ${uploadedFile.id}')),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e')),
+      );
     }
   }
 }
