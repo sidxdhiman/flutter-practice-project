@@ -1,11 +1,15 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
-import 'package:barcode_scan2/barcode_scan2.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:path_provider/path_provider.dart';
+import 'storage_service.dart'; // <-- helper for Firebase Storage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(); // required before using Firebase
   runApp(const RootApp());
 }
 
@@ -17,18 +21,28 @@ class RootApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.indigo,
+        brightness: Brightness.light,
+        primarySwatch: Colors.blueGrey,
+        scaffoldBackgroundColor: Colors.grey[50],
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
             ),
-            padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-            textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
-      home: MyApp(), // now your app runs inside MaterialApp
+      home: const MyApp(),
     );
   }
 }
@@ -70,8 +84,6 @@ class _MyAppState extends State<MyApp> {
         return _signupScreen();
       case AuthMode.landing:
         return _landingScreen();
-      default:
-        return Container();
     }
   }
 
@@ -80,21 +92,21 @@ class _MyAppState extends State<MyApp> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.how_to_reg, size: 80, color: Colors.indigo),
-          SizedBox(height: 20),
-          Text(
+          const Icon(Icons.how_to_reg, size: 80, color: Colors.blueGrey),
+          const SizedBox(height: 20),
+          const Text(
             'Welcome!',
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 40),
+          const SizedBox(height: 40),
           ElevatedButton(
             onPressed: () => setState(() => _mode = AuthMode.login),
-            child: Text('Login'),
+            child: const Text('Login'),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           ElevatedButton(
             onPressed: () => setState(() => _mode = AuthMode.signup),
-            child: Text('Signup'),
+            child: const Text('Signup'),
           ),
         ],
       ),
@@ -107,19 +119,16 @@ class _MyAppState extends State<MyApp> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'Login',
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           TextField(
             controller: _loginController,
-            decoration: InputDecoration(
-              labelText: 'Username',
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(labelText: 'Username'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -127,11 +136,11 @@ class _MyAppState extends State<MyApp> {
                 _mode = AuthMode.landing;
               });
             },
-            child: Text('Login'),
+            child: const Text('Login'),
           ),
           TextButton(
             onPressed: () => setState(() => _mode = AuthMode.signup),
-            child: Text('Go to Signup'),
+            child: const Text("Go to Signup"),
           ),
         ],
       ),
@@ -144,19 +153,16 @@ class _MyAppState extends State<MyApp> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             'Signup',
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           TextField(
             controller: _signupController,
-            decoration: InputDecoration(
-              labelText: 'Username',
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(labelText: 'Username'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -164,11 +170,11 @@ class _MyAppState extends State<MyApp> {
                 _mode = AuthMode.landing;
               });
             },
-            child: Text('Signup'),
+            child: const Text('Signup'),
           ),
           TextButton(
             onPressed: () => setState(() => _mode = AuthMode.login),
-            child: Text('Go to Login'),
+            child: const Text("Go to Login"),
           ),
         ],
       ),
@@ -178,7 +184,7 @@ class _MyAppState extends State<MyApp> {
   Widget _landingScreen() {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           "Attendance",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
@@ -187,7 +193,7 @@ class _MyAppState extends State<MyApp> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: _attendance.isEmpty
-            ? Center(
+            ? const Center(
                 child: Text(
                   "No attendance yet.",
                   style: TextStyle(fontSize: 18),
@@ -196,9 +202,9 @@ class _MyAppState extends State<MyApp> {
             : ListView.builder(
                 itemCount: _attendance.length,
                 itemBuilder: (context, idx) => Card(
-                  margin: EdgeInsets.symmetric(vertical: 6),
+                  margin: const EdgeInsets.symmetric(vertical: 6),
                   child: ListTile(
-                    leading: Icon(Icons.person, color: Colors.indigo),
+                    leading: const Icon(Icons.person, color: Colors.blueGrey),
                     title: Text(_attendance[idx]),
                   ),
                 ),
@@ -206,8 +212,8 @@ class _MyAppState extends State<MyApp> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddAttendanceOptions,
-        icon: Icon(Icons.add),
-        label: Text("Add Attendance"),
+        icon: const Icon(Icons.add),
+        label: const Text("Add Attendance"),
       ),
     );
   }
@@ -215,25 +221,33 @@ class _MyAppState extends State<MyApp> {
   void _showAddAttendanceOptions() {
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Wrap(
         children: [
           ListTile(
-            leading: Icon(Icons.qr_code_scanner, color: Colors.indigo),
-            title: Text("Scan QR Code"),
+            leading: const Icon(Icons.qr_code_scanner, color: Colors.blueGrey),
+            title: const Text("Scan QR Code"),
             onTap: () {
               Navigator.pop(context);
               _scanQRCode();
             },
           ),
           ListTile(
-            leading: Icon(Icons.edit, color: Colors.indigo),
-            title: Text("Manual Entry"),
+            leading: const Icon(Icons.edit, color: Colors.blueGrey),
+            title: const Text("Manual Entry"),
             onTap: () {
               Navigator.pop(context);
               _manualEntryDialog();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload, color: Colors.blueGrey),
+            title: const Text("Upload Attendance"),
+            onTap: () {
+              Navigator.pop(context);
+              _uploadAttendance();
             },
           ),
         ],
@@ -242,10 +256,28 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _scanQRCode() async {
-    var scanResult = await BarcodeScanner.scan();
-    if (scanResult.type == ResultType.Barcode) {
+    String? scannedCode;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text("Scan QR Code")),
+          body: MobileScanner(
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              if (barcodes.isNotEmpty) {
+                scannedCode = barcodes.first.rawValue;
+                Navigator.pop(context); // close scanner after first scan
+              }
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (scannedCode != null) {
       setState(() {
-        _attendance.insert(0, "QR: ${scanResult.rawContent}");
+        _attendance.insert(0, "QR: $scannedCode");
       });
     }
   }
@@ -257,31 +289,25 @@ class _MyAppState extends State<MyApp> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Manual Attendance"),
+        title: const Text("Manual Attendance"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: badgeController,
-              decoration: InputDecoration(
-                labelText: "Badge No.",
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: "Badge No."),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextField(
               controller: nameController,
-              decoration: InputDecoration(
-                labelText: "Name",
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: "Name"),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text("Cancel"),
+            child: const Text("Cancel"),
           ),
           ElevatedButton(
             onPressed: () {
@@ -296,10 +322,41 @@ class _MyAppState extends State<MyApp> {
                 Navigator.pop(ctx);
               }
             },
-            child: Text("Add"),
+            child: const Text("Add"),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _uploadAttendance() async {
+    if (_attendance.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No attendance to upload')));
+      return;
+    }
+
+    final content = _attendance.join('\n');
+    final userId = _user?.username ?? "unknown";
+
+    try {
+      // 1. Create temp file
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/attendance.txt');
+      await file.writeAsString(content);
+
+      // 2. Upload to Firebase Storage
+      final storageService = StorageService();
+      final url = await storageService.uploadAttendanceFile(file, userId);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Uploaded ✅ URL: $url')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+    }
   }
 }

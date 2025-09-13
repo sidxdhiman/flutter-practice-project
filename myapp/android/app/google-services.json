@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1006154589185:android:f97396e90c75a868214c00",
+        "android_client_info": {
+          "package_name": "attendance.demo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACST8yh26PdHAoaONRpsU6R_xK7ibUzhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1006154589185:android:0dffe3dda12383bd214c00",
         "android_client_info": {
           "package_name": "com.example.myapp"
